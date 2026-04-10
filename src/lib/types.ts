@@ -1,59 +1,57 @@
-// ─── Assignment Types ─────────────────────────────────────────────────────────
+// TODO: replace with actual schema once confirmed
 
-export type AssignmentStatus = "pending" | "in_progress" | "completed" | "cancelled";
+import { z } from "zod";
 
+// ─── Status ───────────────────────────────────────────────────────────────────
+
+export const ASSIGNMENT_STATUSES = ["active", "inactive", "pending"] as const;
+export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
+
+export const STATUS_LABELS: Record<AssignmentStatus, string> = {
+  active: "활성",
+  inactive: "비활성",
+  pending: "대기",
+};
+
+// ─── Assignment Entity ────────────────────────────────────────────────────────
+
+// TODO: replace with actual schema once confirmed
 export interface Assignment {
-  assignmentId: string;
-  title: string;
-  description?: string;
+  id: string;
+  deviceId: string;
+  assignedTo: string;
   status: AssignmentStatus;
-  assignee?: string;
-  priority?: "low" | "medium" | "high";
   createdAt: string;
   updatedAt: string;
-  dueDate?: string;
 }
+
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+// TODO: replace with actual schema once confirmed
+export const createAssignmentSchema = z.object({
+  deviceId: z.string().min(1, "Device ID는 필수입니다."),
+  assignedTo: z.string().min(1, "담당자는 필수입니다."),
+  status: z.enum([...ASSIGNMENT_STATUSES] as [string, ...string[]], {
+    error: "상태를 선택해 주세요.",
+  }),
+});
+
+export const updateAssignmentSchema = createAssignmentSchema.extend({
+  id: z.string().min(1),
+});
+
+export type CreateAssignmentInput = z.infer<typeof createAssignmentSchema>;
+export type UpdateAssignmentInput = z.infer<typeof updateAssignmentSchema>;
 
 // ─── API Request / Response ───────────────────────────────────────────────────
 
-export interface ListAssignmentsResponse {
-  items: Assignment[];
-  total: number;
-  nextToken?: string;
-}
-
-export interface CreateAssignmentRequest {
-  title: string;
-  description?: string;
-  status?: AssignmentStatus;
-  assignee?: string;
-  priority?: "low" | "medium" | "high";
-  dueDate?: string;
-}
-
-export interface UpdateAssignmentRequest {
-  assignmentId: string;
-  title?: string;
-  description?: string;
-  status?: AssignmentStatus;
-  assignee?: string;
-  priority?: "low" | "medium" | "high";
-  dueDate?: string;
-}
-
+// TODO: replace with actual schema once confirmed
 export interface DeleteAssignmentRequest {
-  assignmentId: string;
+  id: string;
 }
 
-export interface DeleteAssignmentResponse {
-  message: string;
-  assignmentId: string;
-}
-
-// ─── Generic API Error ────────────────────────────────────────────────────────
-
-export interface ApiError {
-  message: string;
-  code?: string;
-  statusCode?: number;
+export interface ActionResult<T = void> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }

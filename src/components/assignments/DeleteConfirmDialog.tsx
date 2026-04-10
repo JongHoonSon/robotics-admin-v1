@@ -16,16 +16,16 @@ interface Props {
   assignment: Assignment | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  loading: boolean;
+  onConfirm: (id: string) => void;
+  isPending: boolean;
 }
 
-export default function DeleteConfirmDialog({
+export function DeleteConfirmDialog({
   assignment,
   open,
   onOpenChange,
   onConfirm,
-  loading,
+  isPending,
 }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,12 +44,28 @@ export default function DeleteConfirmDialog({
           </div>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground px-1">
-          <span className="font-semibold text-foreground">
-            &ldquo;{assignment?.title}&rdquo;
-          </span>{" "}
-          항목을 영구적으로 삭제합니다. 계속하시겠습니까?
-        </p>
+        <div className="space-y-1 px-1 text-sm text-muted-foreground">
+          <p>
+            아래 배정 항목을 영구적으로 삭제합니다. 계속하시겠습니까?
+          </p>
+          {assignment && (
+            <div className="mt-3 rounded-md border bg-muted/50 px-3 py-2 font-mono text-xs space-y-1">
+              {/* TODO: show actual identifier fields once schema is confirmed */}
+              <div>
+                <span className="text-muted-foreground">ID: </span>
+                <span className="font-semibold text-foreground">{assignment.id}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Device: </span>
+                <span className="font-semibold text-foreground">{assignment.deviceId}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Assigned To: </span>
+                <span className="font-semibold text-foreground">{assignment.assignedTo}</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
@@ -57,7 +73,7 @@ export default function DeleteConfirmDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={loading}
+            disabled={isPending}
           >
             취소
           </Button>
@@ -65,10 +81,10 @@ export default function DeleteConfirmDialog({
             id="delete-confirm-btn"
             type="button"
             variant="destructive"
-            onClick={onConfirm}
-            disabled={loading}
+            disabled={isPending || !assignment}
+            onClick={() => assignment && onConfirm(assignment.id)}
           >
-            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             삭제
           </Button>
         </DialogFooter>

@@ -1,20 +1,21 @@
+/**
+ * Server-only: AWS SigV4 signed API client.
+ * This module must NEVER be imported by Client Components.
+ * Enforced by the "server-only" package — any client-side import will throw at build time.
+ */
+import "server-only";
+
 import { SignatureV4 } from "@aws-sdk/signature-v4";
 import { Sha256 } from "@aws-crypto/sha256-js";
+import { API_CONFIG } from "./config";
 import type {
   Assignment,
-  ListAssignmentsResponse,
-  CreateAssignmentRequest,
-  UpdateAssignmentRequest,
+  CreateAssignmentInput,
+  UpdateAssignmentInput,
   DeleteAssignmentRequest,
-  DeleteAssignmentResponse,
 } from "./types";
 
-// ─── Configuration ────────────────────────────────────────────────────────────
-
-const BASE_URL =
-  "https://9y7qmb3g0k.execute-api.ap-northeast-2.amazonaws.com";
-const REGION = "ap-northeast-2";
-const SERVICE = "execute-api";
+// ─── Credentials ──────────────────────────────────────────────────────────────
 
 function getCredentials() {
   const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
@@ -23,22 +24,23 @@ function getCredentials() {
 
   if (!accessKeyId || !secretAccessKey) {
     throw new Error(
-      "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required."
+      "Missing AWS credentials: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required."
     );
   }
 
-  return { accessKeyId, secretAccessKey, sessionToken };
+  return { accessKeyId, secretAccessKey, ...(sessionToken ? { sessionToken } : {}) };
 }
 
 // ─── SigV4 Signer ─────────────────────────────────────────────────────────────
 
-const getSigner = () =>
-  new SignatureV4({
+function getSigner() {
+  return new SignatureV4({
     credentials: getCredentials(),
-    region: REGION,
-    service: SERVICE,
+    region: API_CONFIG.REGION,
+    service: API_CONFIG.SERVICE,
     sha256: Sha256,
   });
+}
 
 // ─── signedFetch ──────────────────────────────────────────────────────────────
 
@@ -46,25 +48,24 @@ export async function signedFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = new URL(path, BASE_URL);
+  const url = new URL(path, API_CONFIG.BASE_URL);
   const method = (options.method ?? "GET").toUpperCase();
   const body = options.body as string | undefined;
 
-  // Build headers map
   const baseHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
+    "content-type": "application/json",
     host: url.hostname,
   };
+
   if (options.headers) {
-    const raw = options.headers as Record<string, string>;
-    Object.entries(raw).forEach(([k, v]) => {
-      baseHeaders[k.toLowerCase()] = v;
-    });
+    Object.entries(options.headers as Record<string, string>).forEach(
+      ([k, v]) => {
+        baseHeaders[k.toLowerCase()] = v;
+      }
+    );
   }
 
-  const signer = getSigner();
-
-  const signedRequest = await signer.sign({
+  const signedRequest = await getSigner().sign({
     method,
     hostname: url.hostname,
     path: url.pathname + url.search,
@@ -77,24 +78,22 @@ export async function signedFetch<T = unknown>(
     method,
     headers: signedRequest.headers as Record<string, string>,
     body,
+    // Ensure Next.js doesn't cache mutation responses
+    cache: method === "GET" ? "no-store" : "no-store",
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "Unknown error");
-    let errorMessage: string;
+    const text = await response.text().catch(() => "Unknown error");
+    let message: string;
     try {
-      const parsed = JSON.parse(errorText);
-      errorMessage = parsed.message ?? errorText;
+      message = (JSON.parse(text) as { message?: string }).message ?? text;
     } catch {
-      errorMessage = errorText;
+      message = text;
     }
-    throw new Error(`[${response.status}] ${errorMessage}`);
+    throw new Error(`[${response.status}] ${message}`);
   }
 
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return {} as T;
-  }
+  if (response.status === 204) return {} as T;
 
   return response.json() as Promise<T>;
 }
@@ -103,18 +102,18 @@ export async function signedFetch<T = unknown>(
 
 /**
  * GET /assignments
- * Returns a list of all assignments.
+ * TODO: confirm response shape with actual API
  */
-export async function getAssignments(): Promise<ListAssignmentsResponse> {
-  return signedFetch<ListAssignmentsResponse>("/assignments");
+export async function getAssignments(): Promise<Assignment[]> {
+  return signedFetch<Assignment[]>("/assignments");
 }
 
 /**
  * POST /assignments
- * Creates a new assignment.
+ * TODO: confirm request/response fields with actual API
  */
 export async function createAssignment(
-  body: CreateAssignmentRequest
+  body: CreateAssignmentInput
 ): Promise<Assignment> {
   return signedFetch<Assignment>("/assignments", {
     method: "POST",
@@ -123,28 +122,29 @@ export async function createAssignment(
 }
 
 /**
- * PUT /assignments/{assignmentId}
- * Updates an existing assignment.
+ * PATCH /assignments
+ * Body includes `id` + fields to update.
+ * TODO: confirm request/response fields with actual API
  */
 export async function updateAssignment(
-  body: UpdateAssignmentRequest
+  body: UpdateAssignmentInput
 ): Promise<Assignment> {
-  const { assignmentId, ...rest } = body;
-  return signedFetch<Assignment>(`/assignments/${assignmentId}`, {
-    method: "PUT",
-    body: JSON.stringify(rest),
+  return signedFetch<Assignment>("/assignments", {
+    method: "PATCH",
+    body: JSON.stringify(body),
   });
 }
 
 /**
- * DELETE /assignments/{assignmentId}
- * Deletes an assignment.
+ * DELETE /assignments
+ * Body: { id: string }
+ * TODO: confirm primary key field name with actual API
  */
 export async function deleteAssignment(
   body: DeleteAssignmentRequest
-): Promise<DeleteAssignmentResponse> {
-  return signedFetch<DeleteAssignmentResponse>(
-    `/assignments/${body.assignmentId}`,
-    { method: "DELETE" }
-  );
+): Promise<{ message: string }> {
+  return signedFetch<{ message: string }>("/assignments", {
+    method: "DELETE",
+    body: JSON.stringify(body),
+  });
 }

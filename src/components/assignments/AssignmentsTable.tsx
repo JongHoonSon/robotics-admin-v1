@@ -1,6 +1,7 @@
 "use client";
 
 import type { Assignment, AssignmentStatus } from "@/lib/types";
+import { STATUS_LABELS } from "@/lib/types";
 import {
   Table,
   TableBody,
@@ -10,78 +11,37 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pencil, Trash2, PlusCircle } from "lucide-react";
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_LABELS: Record<AssignmentStatus, string> = {
-  pending: "대기",
-  in_progress: "진행 중",
-  completed: "완료",
-  cancelled: "취소",
-};
-
-const STATUS_VARIANTS: Record<
+const STATUS_VARIANT: Record<
   AssignmentStatus,
   "default" | "secondary" | "outline" | "destructive"
 > = {
+  active: "default",
+  inactive: "destructive",
   pending: "secondary",
-  in_progress: "default",
-  completed: "outline",
-  cancelled: "destructive",
 };
 
-function StatusBadge({ status }: { status: AssignmentStatus }) {
-  return (
-    <Badge variant={STATUS_VARIANTS[status]}>
-      {STATUS_LABELS[status]}
-    </Badge>
-  );
-}
-
-// ─── Priority Badge ───────────────────────────────────────────────────────────
-
-const PRIORITY_LABELS = { low: "낮음", medium: "보통", high: "높음" } as const;
-const PRIORITY_VARIANTS = {
-  low: "outline",
-  medium: "secondary",
-  high: "default",
-} as const;
-
-function PriorityBadge({ priority }: { priority?: "low" | "medium" | "high" }) {
-  if (!priority) return <span className="text-muted-foreground text-xs">-</span>;
-  return (
-    <Badge variant={PRIORITY_VARIANTS[priority] as "default" | "secondary" | "outline" | "destructive"}>
-      {PRIORITY_LABELS[priority]}
-    </Badge>
-  );
-}
-
-// ─── Date formatter ───────────────────────────────────────────────────────────
-
-function formatDate(iso?: string) {
-  if (!iso) return "-";
+function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
-// ─── Skeleton Row ─────────────────────────────────────────────────────────────
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function SkeletonRow() {
   return (
     <TableRow>
-      {[...Array(7)].map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <TableCell key={i}>
           <Skeleton className="h-4 w-full" />
         </TableCell>
@@ -94,92 +54,94 @@ function SkeletonRow() {
 
 interface AssignmentsTableProps {
   assignments: Assignment[];
-  loading: boolean;
+  isPending: boolean;
   onEdit: (a: Assignment) => void;
   onDelete: (a: Assignment) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AssignmentsTable({
+export function AssignmentsTable({
   assignments,
-  loading,
+  isPending,
   onEdit,
   onDelete,
 }: AssignmentsTableProps) {
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div
+      className={`rounded-lg border bg-card overflow-hidden transition-opacity ${
+        isPending ? "opacity-60 pointer-events-none" : ""
+      }`}
+    >
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[200px]">제목</TableHead>
-            <TableHead>설명</TableHead>
-            <TableHead className="w-[100px]">상태</TableHead>
-            <TableHead className="w-[80px]">우선순위</TableHead>
-            <TableHead className="w-[120px]">담당자</TableHead>
-            <TableHead className="w-[110px]">마감일</TableHead>
-            <TableHead className="w-[60px] text-right">관리</TableHead>
+            <TableHead className="w-[180px]">Device ID</TableHead>
+            <TableHead className="w-[160px]">Assigned To</TableHead>
+            <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead className="w-[160px]">Created At</TableHead>
+            <TableHead className="w-[100px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
+
         <TableBody>
-          {loading ? (
-            [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+          {isPending && assignments.length === 0 ? (
+            <>
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)}
+            </>
           ) : assignments.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={7}
-                className="text-center h-32 text-muted-foreground"
-              >
-                배정 항목이 없습니다.
+              <TableCell colSpan={5}>
+                <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+                  <PlusCircle className="w-10 h-10 opacity-30" />
+                  <p className="text-sm font-medium">No assignments yet</p>
+                  <p className="text-xs">
+                    "Add Assignment" 버튼을 눌러 첫 항목을 추가하세요.
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           ) : (
             assignments.map((item) => (
-              <TableRow key={item.assignmentId} className="hover:bg-muted/30">
-                <TableCell className="font-medium">{item.title}</TableCell>
-                <TableCell className="text-muted-foreground text-sm max-w-[260px] truncate">
-                  {item.description ?? "-"}
+              <TableRow
+                key={item.id}
+                className="hover:bg-muted/30 transition-colors"
+              >
+                <TableCell className="font-mono text-sm font-medium">
+                  {item.deviceId}
                 </TableCell>
+                <TableCell className="text-sm">{item.assignedTo}</TableCell>
                 <TableCell>
-                  <StatusBadge status={item.status} />
+                  <Badge variant={STATUS_VARIANT[item.status]}>
+                    {STATUS_LABELS[item.status]}
+                  </Badge>
                 </TableCell>
-                <TableCell>
-                  <PriorityBadge priority={item.priority} />
-                </TableCell>
-                <TableCell className="text-sm">
-                  {item.assignee ?? "-"}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {formatDate(item.dueDate)}
+                <TableCell className="text-sm text-muted-foreground">
+                  {formatDate(item.createdAt)}
                 </TableCell>
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      id={`actions-${item.assignmentId}`}
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      id={`edit-${item.id}`}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => onEdit(item)}
+                      aria-label="수정"
                     >
-                      <MoreHorizontal className="w-4 h-4" />
-                      <span className="sr-only">작업 메뉴</span>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        id={`edit-${item.assignmentId}`}
-                        onClick={() => onEdit(item)}
-                      >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        수정
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        id={`delete-${item.assignmentId}`}
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => onDelete(item)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        삭제
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      id={`delete-${item.id}`}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => onDelete(item)}
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
