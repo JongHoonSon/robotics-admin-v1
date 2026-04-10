@@ -8,6 +8,7 @@ import {
   updateAssignmentAction,
   deleteAssignmentAction,
 } from "@/lib/actions";
+import { logoutAction } from "@/lib/auth-actions";
 import { AssignmentsTable } from "./AssignmentsTable";
 import { CreateAssignmentDialog } from "./CreateAssignmentDialog";
 import { EditAssignmentDialog } from "./EditAssignmentDialog";
