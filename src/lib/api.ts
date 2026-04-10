@@ -1,8 +1,3 @@
-/**
- * Server-only: AWS SigV4 signed API client.
- * This module must NEVER be imported by Client Components.
- * Enforced by the "server-only" package — any client-side import will throw at build time.
- */
 import "server-only";
 
 import { SignatureV4 } from "@aws-sdk/signature-v4";
@@ -12,7 +7,7 @@ import type {
   Assignment,
   CreateAssignmentInput,
   UpdateAssignmentInput,
-  DeleteAssignmentRequest,
+  DeleteAssignmentInput,
 } from "./types";
 
 // ─── Credentials ──────────────────────────────────────────────────────────────
@@ -28,7 +23,11 @@ function getCredentials() {
     );
   }
 
-  return { accessKeyId, secretAccessKey, ...(sessionToken ? { sessionToken } : {}) };
+  return {
+    accessKeyId,
+    secretAccessKey,
+    ...(sessionToken ? { sessionToken } : {}),
+  };
 }
 
 // ─── SigV4 Signer ─────────────────────────────────────────────────────────────
@@ -78,8 +77,7 @@ export async function signedFetch<T = unknown>(
     method,
     headers: signedRequest.headers as Record<string, string>,
     body,
-    // Ensure Next.js doesn't cache mutation responses
-    cache: method === "GET" ? "no-store" : "no-store",
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -100,18 +98,12 @@ export async function signedFetch<T = unknown>(
 
 // ─── Typed API Wrappers ───────────────────────────────────────────────────────
 
-/**
- * GET /assignments
- * TODO: confirm response shape with actual API
- */
+/** GET /assignments → Assignment[] */
 export async function getAssignments(): Promise<Assignment[]> {
   return signedFetch<Assignment[]>("/assignments");
 }
 
-/**
- * POST /assignments
- * TODO: confirm request/response fields with actual API
- */
+/** POST /assignments — body: CreateAssignmentInput */
 export async function createAssignment(
   body: CreateAssignmentInput
 ): Promise<Assignment> {
@@ -121,11 +113,7 @@ export async function createAssignment(
   });
 }
 
-/**
- * PATCH /assignments
- * Body includes `id` + fields to update.
- * TODO: confirm request/response fields with actual API
- */
+/** PATCH /assignments — body: UpdateAssignmentInput (pc_sn as identifier) */
 export async function updateAssignment(
   body: UpdateAssignmentInput
 ): Promise<Assignment> {
@@ -135,13 +123,9 @@ export async function updateAssignment(
   });
 }
 
-/**
- * DELETE /assignments
- * Body: { id: string }
- * TODO: confirm primary key field name with actual API
- */
+/** DELETE /assignments — body: { pc_sn: string } */
 export async function deleteAssignment(
-  body: DeleteAssignmentRequest
+  body: DeleteAssignmentInput
 ): Promise<{ message: string }> {
   return signedFetch<{ message: string }>("/assignments", {
     method: "DELETE",

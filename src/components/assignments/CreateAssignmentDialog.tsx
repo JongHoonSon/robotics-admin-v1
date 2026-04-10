@@ -38,6 +38,17 @@ interface Props {
   isPending: boolean;
 }
 
+const DEFAULT_VALUES: CreateAssignmentInput = {
+  pc_sn: "",
+  remote_sn: "",
+  thing_name: "",
+  customer_name: "",
+  customer_phone: "",
+  location: "",
+  frp_address: "",
+  status: "ACTIVE",
+};
+
 export function CreateAssignmentDialog({
   open,
   onOpenChange,
@@ -46,83 +57,142 @@ export function CreateAssignmentDialog({
 }: Props) {
   const form = useForm<CreateAssignmentInput>({
     resolver: zodResolver(createAssignmentSchema),
-    defaultValues: {
-      deviceId: "",
-      assignedTo: "",
-      status: "pending",
-    },
+    defaultValues: DEFAULT_VALUES,
   });
 
-  function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) form.reset();
-    onOpenChange(nextOpen);
-  }
-
-  function handleSubmit(values: CreateAssignmentInput) {
-    onSubmit(values);
+  function handleOpenChange(next: boolean) {
+    if (!next) form.reset(DEFAULT_VALUES);
+    onOpenChange(next);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Assignment</DialogTitle>
-          <DialogDescription>
-            새로운 기기 배정 항목을 추가합니다.
-          </DialogDescription>
+          <DialogDescription>새로운 기기 할당 정보를 등록합니다.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             id="create-assignment-form"
-            onSubmit={form.handleSubmit(handleSubmit)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-2"
           >
-            {/* Device ID */}
+            {/* PC S/N */}
             <FormField
               control={form.control}
-              name="deviceId"
+              name="pc_sn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Device ID</FormLabel>
+                  <FormLabel>PC S/N <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input
-                      id="create-deviceId"
-                      placeholder="e.g. DEVICE-001"
-                      {...field}
-                    />
+                    <Input id="create-pc_sn" placeholder="예: PC-0002" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Assigned To */}
+            {/* Remote S/N */}
             <FormField
               control={form.control}
-              name="assignedTo"
+              name="remote_sn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assigned To</FormLabel>
+                  <FormLabel>Remote S/N <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input
-                      id="create-assignedTo"
-                      placeholder="담당자 이름 또는 ID"
-                      {...field}
-                    />
+                    <Input id="create-remote_sn" placeholder="예: RMT-0002" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Status */}
+            {/* Thing Name */}
+            <FormField
+              control={form.control}
+              name="thing_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Thing Name <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="create-thing_name" placeholder="예: PC-0002-thing" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* 고객명 */}
+              <FormField
+                control={form.control}
+                name="customer_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>고객명 <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input id="create-customer_name" placeholder="예: 홍길동" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 연락처 */}
+              <FormField
+                control={form.control}
+                name="customer_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>연락처 <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input id="create-customer_phone" placeholder="010-1234-5678" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 위치 */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>위치 <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="create-location" placeholder="예: 경기도 성남시 분당구 삼평동" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* FRP 주소 */}
+            <FormField
+              control={form.control}
+              name="frp_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>FRP 주소 <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="create-frp_address" placeholder="http://example.io:7001" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 상태 */}
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>상태 <span className="text-destructive">*</span></FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger id="create-status">
@@ -161,7 +231,7 @@ export function CreateAssignmentDialog({
             disabled={isPending}
           >
             {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            추가
+            등록
           </Button>
         </DialogFooter>
       </DialogContent>

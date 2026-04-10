@@ -3,11 +3,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  updateAssignmentSchema,
-  ASSIGNMENT_STATUSES,
-  STATUS_LABELS,
-} from "@/lib/types";
+import { updateAssignmentSchema, ASSIGNMENT_STATUSES, STATUS_LABELS } from "@/lib/types";
 import type { Assignment, UpdateAssignmentInput } from "@/lib/types";
 import {
   Dialog,
@@ -54,87 +50,173 @@ export function EditAssignmentDialog({
   const form = useForm<UpdateAssignmentInput>({
     resolver: zodResolver(updateAssignmentSchema),
     defaultValues: {
-      id: "",
-      deviceId: "",
-      assignedTo: "",
-      status: "pending",
+      pc_sn: "",
+      remote_sn: "",
+      thing_name: "",
+      customer_name: "",
+      customer_phone: "",
+      location: "",
+      frp_address: "",
+      status: "ACTIVE",
     },
   });
 
-  // Sync form values when assignment target changes
+  // Pre-fill form when target assignment changes
   useEffect(() => {
     if (assignment) {
       form.reset({
-        id: assignment.id,
-        deviceId: assignment.deviceId,
-        assignedTo: assignment.assignedTo,
+        pc_sn: assignment.pc_sn,
+        remote_sn: assignment.remote_sn,
+        thing_name: assignment.thing_name,
+        customer_name: assignment.customer_name,
+        customer_phone: assignment.customer_phone,
+        location: assignment.location,
+        frp_address: assignment.frp_address,
         status: assignment.status,
       });
     }
   }, [assignment, form]);
 
-  function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) form.reset();
-    onOpenChange(nextOpen);
-  }
-
-  function handleSubmit(values: UpdateAssignmentInput) {
-    onSubmit(values);
+  function handleOpenChange(next: boolean) {
+    if (!next) form.reset();
+    onOpenChange(next);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Assignment</DialogTitle>
           <DialogDescription>
-            배정 항목 정보를 수정합니다.
+            기기 할당 정보를 수정합니다.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             id="edit-assignment-form"
-            onSubmit={form.handleSubmit(handleSubmit)}
+            onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-4 py-2"
           >
-            {/* Device ID */}
+            {/* PC S/N — disabled on Edit (Primary Key) */}
             <FormField
               control={form.control}
-              name="deviceId"
+              name="pc_sn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Device ID</FormLabel>
+                  <FormLabel>PC S/N</FormLabel>
                   <FormControl>
-                    <Input id="edit-deviceId" placeholder="e.g. DEVICE-001" {...field} />
+                    <Input
+                      id="edit-pc_sn"
+                      disabled
+                      className="font-mono bg-muted text-muted-foreground"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Assigned To */}
+            {/* Remote S/N */}
             <FormField
               control={form.control}
-              name="assignedTo"
+              name="remote_sn"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assigned To</FormLabel>
+                  <FormLabel>Remote S/N <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input id="edit-assignedTo" placeholder="담당자 이름 또는 ID" {...field} />
+                    <Input id="edit-remote_sn" placeholder="예: RMT-0002" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Status */}
+            {/* Thing Name */}
+            <FormField
+              control={form.control}
+              name="thing_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Thing Name <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="edit-thing_name" placeholder="예: PC-0002-thing" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* 고객명 */}
+              <FormField
+                control={form.control}
+                name="customer_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>고객명 <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input id="edit-customer_name" placeholder="예: 홍길동" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 연락처 */}
+              <FormField
+                control={form.control}
+                name="customer_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>연락처 <span className="text-destructive">*</span></FormLabel>
+                    <FormControl>
+                      <Input id="edit-customer_phone" placeholder="010-1234-5678" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 위치 */}
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>위치 <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="edit-location" placeholder="예: 경기도 성남시 분당구 삼평동" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* FRP 주소 */}
+            <FormField
+              control={form.control}
+              name="frp_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>FRP 주소 <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input id="edit-frp_address" placeholder="http://example.io:7001" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 상태 */}
             <FormField
               control={form.control}
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>상태 <span className="text-destructive">*</span></FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger id="edit-status">

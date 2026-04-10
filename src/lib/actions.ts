@@ -1,11 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import {
-  createAssignment,
-  updateAssignment,
-  deleteAssignment,
-} from "./api";
+import { createAssignment, updateAssignment, deleteAssignment } from "./api";
 import type {
   ActionResult,
   Assignment,
@@ -25,8 +21,7 @@ export async function createAssignmentAction(
     revalidatePath(ASSIGNMENTS_PATH);
     return { success: true, data };
   } catch (err) {
-    const error = err instanceof Error ? err.message : "Unknown error";
-    return { success: false, error };
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
@@ -40,22 +35,20 @@ export async function updateAssignmentAction(
     revalidatePath(ASSIGNMENTS_PATH);
     return { success: true, data };
   } catch (err) {
-    const error = err instanceof Error ? err.message : "Unknown error";
-    return { success: false, error };
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export async function deleteAssignmentAction(
-  id: string
+  pc_sn: string
 ): Promise<ActionResult> {
   try {
-    await deleteAssignment({ id });
+    await deleteAssignment({ pc_sn });
     revalidatePath(ASSIGNMENTS_PATH);
     return { success: true };
   } catch (err) {
-    const error = err instanceof Error ? err.message : "Unknown error";
-    return { success: false, error };
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
 }
