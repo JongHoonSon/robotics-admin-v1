@@ -1,5 +1,5 @@
-import { getAssignments } from "@/lib/api";
 import { AssignmentsClient } from "@/components/assignments/AssignmentsClient";
+import { getAssignments } from "@/lib/api";
 
 export const metadata = {
   title: "Device Assignments | Admin",
@@ -21,3 +21,5 @@ export default async function AssignmentsPage() {
 
   return <AssignmentsClient initialAssignments={assignments} />;
 }
+
+// deploy test
